@@ -2,32 +2,44 @@ import { StatusBar } from "expo-status-bar";
 import React, { useRef } from "react";
 import { StyleSheet, Text, View, Dimensions, Pressable } from "react-native";
 import Constants from "expo-constants";
+const { width, height } = Dimensions.get("screen");
+const start = { x: width / 2, y: height / 2 };
 
+const calcVelocity = (pos, prevPos) => {
+  const dx = pos.x - prevPos.x;
+  const dy = prevPos.y - pos.y;
+  const dt = (pos.t - prevPos.t) / 1000;
+  return { x: dx / dt, y: dy / dt };
+};
 export default function App() {
   const swipeAlreadyReleased = React.useRef(false);
-  let prevPos = { x: null, y: null };
+  let prevPos = { x: null, y: null, t: null };
   let pos = { x: null, y: null, t: null };
   const element = useRef();
   const handleFirstTouch = (ev) => {
-    // console.log("firstTouch");
+    console.log("firstTouch");
+    element.current.setNativeProps({ backgroundColor: "green" });
     return true;
+  };
+  const translateElement = (pos) => {
+    const relativeX = pos.x - start.x;
+    const relativeY = pos.y - start.y;
+    element.current.setNativeProps({
+      transform: [{ translateX: relativeX }, { translateY: relativeY }],
+    });
   };
 
   const handleResponderGrant = (event) => {
-    // console.log("responderGrant");
-    element.current.setNativeProps({ backgroundColor: "green" });
+    console.log("responderGrant");
   };
 
   const handleMove = (ev) => {
-    // console.log("touches:", ev.nativeEvent.pageX);
-    prevPos.x = pos.x;
-    prevPos.y = pos.y;
-    prevPos.t = pos.t;
+    prevPos = { ...pos };
     pos.x = ev.nativeEvent.pageX;
     pos.y = ev.nativeEvent.pageY;
     pos.t = ev.nativeEvent.timestamp;
-
-    console.log("delta", pos.t - prevPos.t);
+    console.log("velocity", calcVelocity(pos, prevPos));
+    translateElement(pos);
   };
 
   const handleTouchReleased = (ev) => {
@@ -48,7 +60,6 @@ export default function App() {
 }
 const platform = Object.keys(Constants.platform)[0];
 
-const { width, height } = Dimensions.get("screen");
 const styles = StyleSheet.create({
   container: {
     flex: 1,
